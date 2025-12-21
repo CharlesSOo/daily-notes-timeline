@@ -1,7 +1,7 @@
 {
-    "name": "daily-notes-editor",
-    "version": "1.1.0",
-    "description": "A plugin for you to edit a bunch of daily notes in one page(inline), which works similar to Roam Research's default daily note view.",
+    "name": "daily-notes-timeline",
+    "version": "1.2.0",
+    "description": "Edit daily notes inline on one page with autofocus and tab reuse. Fork of Daily Notes Editor by Quorafind.",
     "main": "main.js",
     "scripts": {
         "lint": "npx eslint --fix --ext .ts,.svelte .",
@@ -10,7 +10,7 @@
         "version": "node version-bump.mjs && git add manifest.json versions.json"
     },
     "keywords": [],
-    "author": "Quorafind",
+    "author": "CharlesSOo",
     "devDependencies": {
         "@rollup/plugin-node-resolve": "^15.2.3",
         "@rollup/plugin-replace": "^5.0.5",

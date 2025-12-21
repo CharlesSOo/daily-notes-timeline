@@ -379,6 +379,15 @@ export class DailyNoteView extends ItemView {
     }
 
     /**
+     * Scroll to a specific file in the view
+     */
+    public scrollToFile(filePath: string): void {
+        if (this.view) {
+            this.view.scrollToFile(filePath);
+        }
+    }
+
+    /**
      * Refresh the view for a new day
      * This is called when the date changes (e.g., after midnight)
      */

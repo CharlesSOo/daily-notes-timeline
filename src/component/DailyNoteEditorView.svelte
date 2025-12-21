@@ -3,6 +3,7 @@
     import type { WorkspaceLeaf } from "obsidian";
 
     import { TFile, moment } from "obsidian";
+    import { getDateFromFile } from "obsidian-daily-notes-interface";
     import DailyNote from "./DailyNote.svelte";
     import { inview } from "svelte-inview";
     import { TimeRange, SelectionMode, TimeField } from "../types/time";
@@ -261,6 +262,57 @@
         }
         visibleNotes = visibleNotes;
     }
+
+    function isToday(file: TFile): boolean {
+        if (!plugin.settings.autoFocus) return false;
+        const fileDate = getDateFromFile(file, "day");
+        return fileDate?.isSame(moment(), "day") ?? false;
+    }
+
+    // Track file to scroll to after render
+    let scrollToFilePath: string | null = null;
+
+    export function scrollToFile(filePath: string) {
+        scrollToFilePath = filePath;
+
+        // Try to scroll immediately if the element exists
+        const tryScroll = () => {
+            const element = document.querySelector(`[data-id='dn-editor-${filePath}']`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                // Mark it as visible so it renders
+                visibleNotes.add(filePath);
+                visibleNotes = visibleNotes;
+                scrollToFilePath = null;
+                return true;
+            }
+            return false;
+        };
+
+        // If not found immediately, the file might not be rendered yet
+        // Load more files and try again
+        if (!tryScroll()) {
+            // Force load all files up to the target
+            const targetIndex = filteredFiles.findIndex(f => f.path === filePath);
+            if (targetIndex >= 0) {
+                // Add all files up to and including the target
+                const filesToAdd = filteredFiles.splice(0, targetIndex + 1);
+                renderedFiles = [...renderedFiles, ...filesToAdd];
+            } else {
+                // File might already be in renderedFiles, just need to wait for DOM
+                // Or file is in a different time range
+            }
+
+            // Wait for DOM update and try again
+            setTimeout(() => {
+                if (!tryScroll()) {
+                    // Try a few more times with delays
+                    setTimeout(tryScroll, 200);
+                    setTimeout(tryScroll, 500);
+                }
+            }, 100);
+        }
+    }
 </script>
 
 <div class="daily-note-view">
@@ -289,6 +341,7 @@
                 plugin={plugin} 
                 leaf={leaf} 
                 shouldRender={visibleNotes.has(file.path)}
+                autoFocus={isToday(file)}
             />
         </div>
     {/each}

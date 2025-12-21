@@ -105,6 +105,7 @@ export default class DailyNoteViewPlugin extends Plugin {
                 });
             }
         });
+
     }
 
     onunload() {
@@ -115,9 +116,62 @@ export default class DailyNoteViewPlugin extends Plugin {
 
     async openDailyNoteEditor() {
         const workspace = this.app.workspace;
+
+        if (this.settings.switchToExisting) {
+            const leaves = workspace.getLeavesOfType(DAILY_NOTE_VIEW_TYPE);
+            if (leaves.length > 0) {
+                workspace.revealLeaf(leaves[0]);
+                return;
+            }
+        }
+
         const leaf = workspace.getLeaf(true);
         await leaf.setViewState({ type: DAILY_NOTE_VIEW_TYPE });
         workspace.revealLeaf(leaf);
+    }
+
+    async openDailyNoteInTimeline(file: TFile, targetLeaf?: WorkspaceLeaf) {
+        const workspace = this.app.workspace;
+
+        // Check if timeline is already open
+        let leaves = workspace.getLeavesOfType(DAILY_NOTE_VIEW_TYPE);
+        let leaf: WorkspaceLeaf;
+        let view: DailyNoteView;
+
+        if (leaves.length > 0) {
+            // Use existing timeline
+            leaf = leaves[0];
+            view = leaf.view as DailyNoteView;
+
+            // Close the empty leaf that was created for this file open
+            if (targetLeaf && targetLeaf !== leaf) {
+                targetLeaf.detach();
+            }
+
+            workspace.revealLeaf(leaf);
+            // Scroll after short delay for existing view
+            setTimeout(() => {
+                if (view.scrollToFile) {
+                    view.scrollToFile(file.path);
+                }
+            }, 100);
+        } else {
+            // Reuse the target leaf if provided, otherwise use active leaf
+            leaf = targetLeaf || workspace.getLeaf(false);
+            await leaf.setViewState({ type: DAILY_NOTE_VIEW_TYPE });
+            workspace.revealLeaf(leaf);
+            view = leaf.view as DailyNoteView;
+
+            // Wait for view to fully initialize before scrolling
+            const waitForView = () => {
+                if (view.view && view.scrollToFile) {
+                    view.scrollToFile(file.path);
+                } else {
+                    setTimeout(waitForView, 100);
+                }
+            };
+            setTimeout(waitForView, 300);
+        }
     }
 
     async openFolderView(folderPath: string, timeField: TimeField = "mtime") {
@@ -273,8 +327,23 @@ export default class DailyNoteViewPlugin extends Plugin {
                             this.setPinned(true);
                     };
                 },
-                openFile(old) {
+                openFile: (old) => {
+                    const plugin = this;
                     return function (file: TFile, openState?: OpenViewState) {
+                        // Intercept daily note opens when setting is enabled
+                        if (plugin.settings.openDailyNotesInTimeline && !isDailyNoteLeaf(this)) {
+                            const allDailyNotes = getAllDailyNotes();
+                            const isDailyNote = Object.values(allDailyNotes).some(
+                                (dn) => dn.path === file.path
+                            );
+
+                            if (isDailyNote) {
+                                // Open in timeline instead - pass this leaf to reuse it
+                                plugin.openDailyNoteInTimeline(file, this);
+                                return;
+                            }
+                        }
+
                         if (isDailyNoteLeaf(this)) {
                             setTimeout(
                                 around(Workspace.prototype, {
