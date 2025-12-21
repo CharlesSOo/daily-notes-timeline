@@ -1,6 +1,6 @@
 <script lang="ts">
     import type DailyNoteViewPlugin from "../dailyNoteViewIndex";
-    import { MarkdownView, TAbstractFile, TFile, WorkspaceLeaf } from "obsidian";
+    import { MarkdownView, TAbstractFile, TFile, WorkspaceLeaf, moment } from "obsidian";
     import { spawnLeafView } from "../leafView";
     import { onDestroy, onMount } from "svelte";
 
@@ -13,22 +13,45 @@
     let editorEl: HTMLElement;
     let containerEl: HTMLElement;
     let title: string;
+    let formattedTitle: string;
 
     let rendered: boolean = false;
 
     let createdLeaf: WorkspaceLeaf;
     let unloadTimeout: number | null = null;
     let editorHeight: number = 100; // Default minimum height
-    
+
     // Track if this component is being destroyed
     let isDestroying = false;
-    
+
     // Track if the note is collapsed
     let isCollapsed: boolean = false;
+
+    // Format date with ordinal suffix (1st, 2nd, 3rd, etc.)
+    function formatDateWithOrdinal(basename: string): string {
+        const date = moment(basename, "YYYY-MM-DD", true);
+        if (date.isValid()) {
+            const day = date.date();
+            const suffix = getOrdinalSuffix(day);
+            return date.format(`ddd, MMMM D[${suffix}], YYYY`);
+        }
+        return basename; // Return original if not a valid date
+    }
+
+    function getOrdinalSuffix(day: number): string {
+        if (day > 3 && day < 21) return 'th';
+        switch (day % 10) {
+            case 1: return 'st';
+            case 2: return 'nd';
+            case 3: return 'rd';
+            default: return 'th';
+        }
+    }
 
     onMount(() => {
         if (file instanceof TFile) {
             title = file.basename;
+            formattedTitle = formatDateWithOrdinal(file.basename);
         }
     });
 
@@ -182,19 +205,12 @@
 <div class="daily-note-container" data-id='dn-editor-{file.path}' bind:this={containerEl} style="min-height: {isCollapsed ? 'auto' : editorHeight + 'px'};">
     <div class="daily-note">
         {#if title}
-            <div class="daily-note-title inline-title">
-                <!-- Collapse/Expand button -->
-                <!-- svelte-ignore a11y-interactive-supports-focus -->
-                <!-- svelte-ignore a11y-click-events-have-key-events -->
-                <span role="button" data-collapsed={isCollapsed} class="collapse-button" on:click={toggleCollapse} title={isCollapsed ? "Expand" : "Collapse"}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>
-                </span>
-                <!-- svelte-ignore a11y-interactive-supports-focus -->
-                <!-- svelte-ignore a11y-click-events-have-key-events -->
-                <span role="link" class="clickable-link" on:click={handleFileIconClick} data-title={title}>{title}</span>
-                
-                
-                
+            <div class="daily-note-header">
+                <div class="daily-note-title inline-title">
+                    <!-- svelte-ignore a11y-interactive-supports-focus -->
+                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                    <span role="link" class="clickable-link" on:click={handleFileIconClick} data-title={title}>{formattedTitle || title}</span>
+                </div>
             </div>
         {/if}
         <div class="daily-note-editor" data-collapsed={isCollapsed} aria-hidden="true" bind:this={editorEl} data-title={title} on:click={handleEditorClick}>
@@ -210,13 +226,35 @@
 
 <style>
     .daily-note {
-        margin-bottom: var(--size-4-5);
-        padding-bottom: var(--size-4-8);
+        margin-bottom: var(--size-4-2);
+        padding-bottom: var(--size-4-4);
     }
 
     .daily-note:has(.daily-note-editor[data-collapsed="true"]) {
         margin-bottom: 0;
         padding-bottom: 0;
+    }
+
+    .daily-note-header {
+        border-left: 3px solid var(--color-accent);
+        padding-left: 12px;
+        margin-bottom: var(--size-4-4);
+    }
+
+    .daily-note:has(.is-readable-line-width) .daily-note-header {
+        max-width: var(--file-line-width);
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .daily-note:not(:has(.is-readable-line-width)) .daily-note-header {
+        margin-left: calc((100% - var(--file-line-width)) / 2);
+        margin-right: calc((100% - var(--file-line-width)) / 2);
+    }
+
+    .daily-note-title {
+        font-size: 1.25em;
+        font-weight: 600;
     }
 
     .daily-note-editor {
@@ -227,67 +265,16 @@
         display: none;
     }
 
-    .daily-note .collapse-button {
-        display: none;
-    }
-
-    .daily-note:hover .collapse-button {
-        display: block;
-    }
-
-    .daily-note .collapse-button {
-        color: var(--text-muted);
-    }
-
-    .daily-note .collapse-button:hover  {
-        color: var(--text-normal);
-    }
-
-    .daily-note:has(.is-readable-line-width) .daily-note-title {
-        max-width: calc(var(--file-line-width) + var(--size-4-4));
-        width: calc(var(--file-line-width) + var(--size-4-4));
-        margin-left: auto;
-        margin-right: auto;
-        margin-bottom: var(--size-4-8);
-        display: flex;
-        align-items: center;
-        justify-content: start;
-
-        gap: var(--size-4-2);
-    }
-
-    .collapse-button {
-        margin-left: calc(var(--size-4-8) * -1);
-    }
-
-    .collapse-button[data-collapsed="true"] {
-        transform: rotate(-90deg);
-
-        transition: transform 0.2s ease;
-    }
-
-    .daily-note:not(:has(.is-readable-line-width)) .daily-note-title {
-        display: flex;
-        justify-content: start;
-        align-items: center;
-        width: 100%;
-        padding-left: calc(calc(100% - var(--file-line-width)) / 2 - var(--size-4-2));
-        padding-right: calc(calc(100% - var(--file-line-width)) / 2 - var(--size-4-2));
-        margin-top: var(--size-4-8);
-
-        gap: var(--size-4-2);
-    }
-
     .clickable-link {
         cursor: pointer;
         text-decoration: none;
+        color: var(--text-normal);
     }
 
     .clickable-link:hover {
         color: var(--color-accent);
-        text-decoration: underline;
     }
-    
+
     .editor-placeholder {
         display: flex;
         justify-content: center;
@@ -295,22 +282,5 @@
         height: 100px;
         color: var(--text-muted);
         font-style: italic;
-    }
-    
-    .collapse-button {
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-        border-radius: 4px;
-        color: var(--text-muted);
-        transition: background-color 0.2s ease;
-    }
-    
-    .collapse-button:hover {
-        /* background-color: var(--background-modifier-hover); */
-        color: var(--text-normal);
     }
 </style>
