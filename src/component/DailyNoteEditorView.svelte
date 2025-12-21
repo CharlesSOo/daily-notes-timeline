@@ -274,43 +274,46 @@
 
     export function scrollToFile(filePath: string) {
         scrollToFilePath = filePath;
+        let retryCount = 0;
+        const maxRetries = 10;
 
-        // Try to scroll immediately if the element exists
-        const tryScroll = () => {
+        // Try to scroll to the element
+        const tryScroll = (): boolean => {
             const element = document.querySelector(`[data-id='dn-editor-${filePath}']`);
             if (element) {
                 element.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 // Mark it as visible so it renders
-                visibleNotes.add(filePath);
-                visibleNotes = visibleNotes;
+                visibleNotes = new Set([...visibleNotes, filePath]);
                 scrollToFilePath = null;
                 return true;
             }
             return false;
         };
 
+        // Retry with backoff
+        const retryScroll = () => {
+            if (tryScroll()) return;
+
+            retryCount++;
+            if (retryCount < maxRetries) {
+                setTimeout(retryScroll, 100);
+            }
+        };
+
         // If not found immediately, the file might not be rendered yet
-        // Load more files and try again
         if (!tryScroll()) {
-            // Force load all files up to the target
+            // Check if file is in filteredFiles (not yet rendered)
             const targetIndex = filteredFiles.findIndex(f => f.path === filePath);
             if (targetIndex >= 0) {
-                // Add all files up to and including the target
-                const filesToAdd = filteredFiles.splice(0, targetIndex + 1);
+                // Use slice (not splice) to avoid mutating the array
+                const filesToAdd = filteredFiles.slice(0, targetIndex + 1);
+                // Remove from filteredFiles properly
+                filteredFiles = filteredFiles.slice(targetIndex + 1);
                 renderedFiles = [...renderedFiles, ...filesToAdd];
-            } else {
-                // File might already be in renderedFiles, just need to wait for DOM
-                // Or file is in a different time range
             }
 
-            // Wait for DOM update and try again
-            setTimeout(() => {
-                if (!tryScroll()) {
-                    // Try a few more times with delays
-                    setTimeout(tryScroll, 200);
-                    setTimeout(tryScroll, 500);
-                }
-            }, 100);
+            // Wait for DOM update and retry
+            setTimeout(retryScroll, 100);
         }
     }
 </script>

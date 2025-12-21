@@ -2,64 +2,70 @@
 
 A fork of [Daily Notes Editor](https://github.com/Quorafind/Obsidian-Daily-Notes-Editor) by [Quorafind/Boninall](https://github.com/Quorafind).
 
-Edit daily notes inline on one page, with autofocus and tab reuse features.
+View and edit all your daily notes in a single scrollable timeline.
 
 ![Daily-Note-View](https://raw.githubusercontent.com/Quorafind/Obsidian-Daily-Notes-Editor/master/image/Daily-Note-View.gif)
 
-# Features
+## What's New in This Fork
 
--   Open a daily note editor page to edit a bunch of daily notes in one page/inline.
-    -   You can open it from command.
-    -   You can open it from left ribbon.
--   View and filter notes by different time ranges:
-    -   Week, Month, Year, Quarter
-    -   Last Week, Last Month, Last Year, Last Quarter
-    -   All notes
-    -   Custom date range
--   Multiple view modes:
-    -   Daily Notes mode - view your daily notes
-    -   Folder mode - view all notes from a specific folder
-    -   Tag mode - view all notes with a specific tag
--   Sort options:
-    -   Sort by creation time (newest/oldest first)
-    -   Sort by modification time (newest/oldest first)
--   Customization options:
-    -   Hide frontmatter in daily notes
-    -   Hide backlinks in daily notes
-    -   Create and open Daily Notes Editor on startup
--   Save custom presets for quick access to specific folders or tags
--   Navigate between notes using keyboard shortcuts (up/down)
--   Right-click on folders to open all notes in that folder in the Daily Notes Editor
+This fork adds three quality-of-life improvements:
 
-# Installation
+### 1. Auto-focus Today's Note
+When you open the timeline, your cursor automatically jumps to today's note, ready to type. No more scrolling or clicking to start writing.
 
--   Install from Obsidian Community Plugins
+### 2. Reuse Existing Tab
+Opening the timeline reuses an existing tab instead of creating duplicates. Keeps your workspace clean.
 
-# Settings
+### 3. Click to Open in Timeline
+Click any daily note in the file explorer and it opens in the timeline view, scrolling directly to that note. Your daily notes always open in context.
 
--   **Hide frontmatter**: Toggle to hide frontmatter in daily notes
--   **Hide backlinks**: Toggle to hide backlinks in daily notes
--   **Create and open Daily Notes Editor on startup**: Automatically create today's daily note and open the Daily Notes Editor when Obsidian starts
--   **Presets**: Save and manage custom presets for quick access to specific folders or tags
+## Installation
 
-# Usage
+**Manual Installation:**
+1. Download the latest release
+2. Extract to `.obsidian/plugins/daily-notes-timeline/`
+3. Enable in Settings → Community Plugins
 
-1. Click the calendar icon in the left ribbon or use the command "Open Daily Notes Editor"
-2. Use the action buttons in the view to:
-    - Select time range (Week, Month, Year, All, etc.)
-    - Change view mode (Daily, Folder, Tag)
-    - Change sort order
-3. Save your current selection as a preset for quick access later
-4. Right-click on any folder in the file explorer to open all notes from that folder in the Daily Notes Editor
+## Settings
 
-# Credits
+| Setting | Description |
+|---------|-------------|
+| **Auto focus today's note** | Cursor jumps to end of today's note when opening |
+| **Switch to existing editor** | Reuse existing timeline tab instead of opening new ones |
+| **Open daily notes in timeline** | Clicking a daily note opens it in the timeline view |
+| Hide frontmatter | Hide YAML frontmatter in notes |
+| Hide backlinks | Hide backlinks section |
+| Open on startup | Auto-open timeline when Obsidian starts |
 
-This is a fork of [Daily Notes Editor](https://github.com/Quorafind/Obsidian-Daily-Notes-Editor) by [Quorafind/Boninall](https://github.com/Quorafind). Please support the original author!
+## Usage
 
-Additional features from [PR #77](https://github.com/Quorafind/Obsidian-Daily-Notes-Editor/pull/77) by [Marijn Bent](https://github.com/marijnbent).
+1. Open via Command Palette: `Open Daily Notes Editor`
+2. Or click the calendar icon in the ribbon
+3. Click any daily note in the sidebar to jump to it in the timeline
 
-## Original Thanks
+## All Features
 
--   [Hover Editor](https://github.com/nothingislost/obsidian-hover-editor): Code for generating workspace leaf
--   [Obsidian Daily Notes Interface](https://github.com/liamcain/obsidian-daily-notes-interface): API for daily notes
--   [Make.md](https://www.make.md/): Inspiration for the plugin
+- View multiple daily notes in one scrollable page
+- Filter by time range (week, month, year, custom)
+- Multiple view modes: Daily Notes, Folder, Tag
+- Sort by creation/modification time
+- Save presets for quick access
+- Keyboard navigation between notes
+- Right-click folders to view all notes
+
+## Credits
+
+**Original Plugin:**
+[Daily Notes Editor](https://github.com/Quorafind/Obsidian-Daily-Notes-Editor) by [Quorafind/Boninall](https://github.com/Quorafind)
+
+**PR #77 Features (autofocus + reuse tab):**
+[Marijn Bent](https://github.com/marijnbent)
+
+**Upstream Dependencies:**
+- [Hover Editor](https://github.com/nothingislost/obsidian-hover-editor) - Workspace leaf code
+- [Obsidian Daily Notes Interface](https://github.com/liamcain/obsidian-daily-notes-interface) - Daily notes API
+- [Make.md](https://www.make.md/) - Original inspiration
+
+## License
+
+Same license as the original project.

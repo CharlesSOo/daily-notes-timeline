@@ -1,0 +1,182 @@
+From 01d34cfe1439689c6c595322832aa0ca15baca2a Mon Sep 17 00:00:00 2001
+From: Marijn Bent <marijn@marijnbent.nl>
+Date: Tue, 18 Nov 2025 16:01:14 +0100
+Subject: [PATCH 1/2] add autofocus
+
+---
+ src/component/DailyNote.svelte           |  7 +++++++
+ src/component/DailyNoteEditorView.svelte |  8 ++++++++
+ src/dailyNoteSettings.ts                 | 16 ++++++++++++++++
+ 3 files changed, 31 insertions(+)
+
+diff --git a/src/component/DailyNote.svelte b/src/component/DailyNote.svelte
+index c8f14e6..cae83c9 100644
+--- a/src/component/DailyNote.svelte
++++ b/src/component/DailyNote.svelte
+@@ -8,6 +8,7 @@
+     export let plugin: DailyNoteViewPlugin;
+     export let leaf: WorkspaceLeaf;
+     export let shouldRender: boolean = true;
++    export let autoFocus: boolean = false;
+ 
+     let editorEl: HTMLElement;
+     let containerEl: HTMLElement;
+@@ -102,6 +103,12 @@
+                         // Apply the height to the container
+                         containerEl.style.minHeight = `${editorHeight}px`;
+ 
++                        if (autoFocus) {
++                            const editor = createdLeaf.view.editor;
++                            editor.focus();
++                            editor.setCursor(editor.lineCount(), 0);
++                        }
++
+                         window.clearTimeout(timeout);
+                     }
+                 }
+diff --git a/src/component/DailyNoteEditorView.svelte b/src/component/DailyNoteEditorView.svelte
+index ae8b646..6439e4d 100644
+--- a/src/component/DailyNoteEditorView.svelte
++++ b/src/component/DailyNoteEditorView.svelte
+@@ -3,6 +3,7 @@
+     import type { WorkspaceLeaf } from "obsidian";
+ 
+     import { TFile, moment } from "obsidian";
++    import { getDateFromFile } from "obsidian-daily-notes-interface";
+     import DailyNote from "./DailyNote.svelte";
+     import { inview } from "svelte-inview";
+     import { TimeRange, SelectionMode, TimeField } from "../types/time";
+@@ -261,6 +262,12 @@
+         }
+         visibleNotes = visibleNotes;
+     }
++
++    function isToday(file: TFile): boolean {
++        if (!plugin.settings.autoFocus) return false;
++        const fileDate = getDateFromFile(file, "day");
++        return fileDate?.isSame(moment(), "day") ?? false;
++    }
+ </script>
+ 
+ <div class="daily-note-view">
+@@ -289,6 +296,7 @@
+                 plugin={plugin} 
+                 leaf={leaf} 
+                 shouldRender={visibleNotes.has(file.path)}
++                autoFocus={isToday(file)}
+             />
+         </div>
+     {/each}
+diff --git a/src/dailyNoteSettings.ts b/src/dailyNoteSettings.ts
+index c54f53f..fbef895 100644
+--- a/src/dailyNoteSettings.ts
++++ b/src/dailyNoteSettings.ts
+@@ -6,6 +6,7 @@ export interface DailyNoteSettings {
+     hideBacklinks: boolean;
+     createAndOpenOnStartup: boolean;
+     useArrowUpOrDownToNavigate: boolean;
++    autoFocus: boolean;
+ 
+     preset: {
+         type: "folder" | "tag";
+@@ -18,6 +19,7 @@ export const DEFAULT_SETTINGS: DailyNoteSettings = {
+     hideBacklinks: false,
+     createAndOpenOnStartup: false,
+     useArrowUpOrDownToNavigate: false,
++    autoFocus: false,
+     preset: [],
+ };
+ 
+@@ -118,6 +120,20 @@ export class DailyNoteSettingTab extends PluginSettingTab {
+                     })
+             );
+ 
++        new Setting(containerEl)
++            .setName("Auto focus today's note")
++            .setDesc(
++                "Automatically focus today's note and move the cursor to the end of the document"
++            )
++            .addToggle((toggle) =>
++                toggle
++                    .setValue(settings.autoFocus)
++                    .onChange(async (value) => {
++                        this.plugin.settings.autoFocus = value;
++                        this.applySettingsUpdate();
++                    })
++            );
++
+         new Setting(containerEl).setName("Saved presets").setHeading();
+ 
+         const presetContainer = containerEl.createDiv("preset-container");
+
+From 35c688e4d5eae19e475787628903f19b0d48c2f1 Mon Sep 17 00:00:00 2001
+From: Marijn Bent <marijn@marijnbent.nl>
+Date: Tue, 18 Nov 2025 16:23:47 +0100
+Subject: [PATCH 2/2] add switch
+
+---
+ src/dailyNoteSettings.ts  | 16 ++++++++++++++++
+ src/dailyNoteViewIndex.ts |  9 +++++++++
+ 2 files changed, 25 insertions(+)
+
+diff --git a/src/dailyNoteSettings.ts b/src/dailyNoteSettings.ts
+index fbef895..1043c33 100644
+--- a/src/dailyNoteSettings.ts
++++ b/src/dailyNoteSettings.ts
+@@ -7,6 +7,7 @@ export interface DailyNoteSettings {
+     createAndOpenOnStartup: boolean;
+     useArrowUpOrDownToNavigate: boolean;
+     autoFocus: boolean;
++    switchToExisting: boolean;
+ 
+     preset: {
+         type: "folder" | "tag";
+@@ -20,6 +21,7 @@ export const DEFAULT_SETTINGS: DailyNoteSettings = {
+     createAndOpenOnStartup: false,
+     useArrowUpOrDownToNavigate: false,
+     autoFocus: false,
++    switchToExisting: false,
+     preset: [],
+ };
+ 
+@@ -134,6 +136,20 @@ export class DailyNoteSettingTab extends PluginSettingTab {
+                     })
+             );
+ 
++        new Setting(containerEl)
++            .setName("Switch to existing editor")
++            .setDesc(
++                "If an daily notes editor is already open, switch to it rather than open it on a new tab"
++            )
++            .addToggle((toggle) =>
++                toggle
++                    .setValue(settings.switchToExisting)
++                    .onChange(async (value) => {
++                        this.plugin.settings.switchToExisting = value;
++                        this.applySettingsUpdate();
++                    })
++            );
++
+         new Setting(containerEl).setName("Saved presets").setHeading();
+ 
+         const presetContainer = containerEl.createDiv("preset-container");
+diff --git a/src/dailyNoteViewIndex.ts b/src/dailyNoteViewIndex.ts
+index 96c490e..5536656 100644
+--- a/src/dailyNoteViewIndex.ts
++++ b/src/dailyNoteViewIndex.ts
+@@ -115,6 +115,15 @@ export default class DailyNoteViewPlugin extends Plugin {
+ 
+     async openDailyNoteEditor() {
+         const workspace = this.app.workspace;
++
++        if (this.settings.switchToExisting) {
++            const leaves = workspace.getLeavesOfType(DAILY_NOTE_VIEW_TYPE);
++            if (leaves.length > 0) {
++                workspace.revealLeaf(leaves[0]);
++                return;
++            }
++        }
++
+         const leaf = workspace.getLeaf(true);
+         await leaf.setViewState({ type: DAILY_NOTE_VIEW_TYPE });
+         workspace.revealLeaf(leaf);

@@ -163,14 +163,17 @@ export default class DailyNoteViewPlugin extends Plugin {
             view = leaf.view as DailyNoteView;
 
             // Wait for view to fully initialize before scrolling
+            let retries = 0;
+            const maxRetries = 20;
             const waitForView = () => {
                 if (view.view && view.scrollToFile) {
                     view.scrollToFile(file.path);
-                } else {
+                } else if (retries < maxRetries) {
+                    retries++;
                     setTimeout(waitForView, 100);
                 }
             };
-            setTimeout(waitForView, 300);
+            setTimeout(waitForView, 200);
         }
     }
 
