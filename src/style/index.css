@@ -47,7 +47,8 @@
     display: block;
     height: 1px;
     width: var(--file-line-width);
-    margin-bottom: 30px;
+    margin-bottom: 16px;
+    margin-top: 8px;
     margin-left: auto;
     margin-right: auto;
     background-color: var(--background-modifier-border);
@@ -94,10 +95,25 @@
     min-height: unset !important;
 }
 
+/* Hide backlinks section when empty (no backlinks found) */
+.daily-note-view .embedded-backlinks:has(.search-empty-state) {
+    display: none;
+}
+
+/* Hide backlinks when tree is empty */
+.daily-note-view .embedded-backlinks .backlink-pane:not(:has(.tree-item)) {
+    display: none;
+}
+
+/* Collapse empty unlinked mentions */
+.daily-note-view .embedded-backlinks .backlink-pane:has(.search-empty-state) {
+    display: none;
+}
+
 .daily-note-view {
     display: flex;
     flex-direction: column;
-    gap: var(--size-4-4);
+    gap: 0;
     overflow-x: hidden;
 }
 

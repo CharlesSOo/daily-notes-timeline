@@ -12,6 +12,7 @@
 
     let editorEl: HTMLElement;
     let containerEl: HTMLElement;
+    let headerEl: HTMLElement;
     let title: string;
     let formattedTitle: string;
 
@@ -19,13 +20,15 @@
 
     let createdLeaf: WorkspaceLeaf;
     let unloadTimeout: number | null = null;
-    let editorHeight: number = 100; // Default minimum height
+    let editorHeight: number = 500; // Large minimum for Reflect-style breathing room
 
     // Track if this component is being destroyed
     let isDestroying = false;
 
     // Track if the note is collapsed
     let isCollapsed: boolean = false;
+
+    let isToday: boolean = false;
 
     // Format date with ordinal suffix (1st, 2nd, 3rd, etc.)
     function formatDateWithOrdinal(basename: string): string {
@@ -48,10 +51,16 @@
         }
     }
 
+    function checkIsToday(basename: string): boolean {
+        const date = moment(basename, "YYYY-MM-DD", true);
+        return date.isValid() && date.isSame(moment(), "day");
+    }
+
     onMount(() => {
         if (file instanceof TFile) {
             title = file.basename;
             formattedTitle = formatDateWithOrdinal(file.basename);
+            isToday = checkIsToday(file.basename);
         }
     });
 
@@ -123,8 +132,26 @@
                 // @ts-ignore
                 const actualHeight = createdLeaf.view.editMode?.editor?.cm?.dom.innerHeight;
                 if (actualHeight > 0) {
-                    editorHeight = actualHeight;
+                    // Ensure we keep at least 60vh or 500px, but expand if content is larger
+                    const viewportMin = Math.max(500, window.innerHeight * 0.6);
+                    editorHeight = Math.max(actualHeight, viewportMin);
                     containerEl.style.minHeight = `${editorHeight}px`;
+                }
+
+                // Match header position to editor content position
+                if (headerEl && editorEl) {
+                    // Try to find the actual line content position
+                    const cmLine = editorEl.querySelector('.cm-line');
+                    const cmSizer = editorEl.querySelector('.cm-sizer');
+                    const target = cmLine || cmSizer;
+                    if (target) {
+                        const targetRect = target.getBoundingClientRect();
+                        const containerRect = containerEl.getBoundingClientRect();
+                        const leftOffset = targetRect.left - containerRect.left;
+                        // Account for the blue bar (3px border + 12px padding = 15px)
+                        const barOffset = isToday ? 15 : 0;
+                        headerEl.style.marginLeft = `${leftOffset - barOffset}px`;
+                    }
                 }
 
                 // Autofocus regardless of height calculation
@@ -202,10 +229,10 @@
     }
 </script>
 
-<div class="daily-note-container" data-id='dn-editor-{file.path}' bind:this={containerEl} style="min-height: {isCollapsed ? 'auto' : editorHeight + 'px'};">
+<div class="daily-note-container" data-id='dn-editor-{file.path}' bind:this={containerEl} style="min-height: {isCollapsed ? 'auto' : 'max(500px, 60vh)'};">
     <div class="daily-note">
         {#if title}
-            <div class="daily-note-header">
+            <div class="daily-note-header" class:is-today={isToday} bind:this={headerEl}>
                 <div class="daily-note-title inline-title">
                     <!-- svelte-ignore a11y-interactive-supports-focus -->
                     <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -213,7 +240,7 @@
                 </div>
             </div>
         {/if}
-        <div class="daily-note-editor" data-collapsed={isCollapsed} aria-hidden="true" bind:this={editorEl} data-title={title} on:click={handleEditorClick}>
+        <div class="daily-note-editor" data-collapsed={isCollapsed} bind:this={editorEl} data-title={title} on:click={handleEditorClick}>
             {#if !rendered && shouldRender}
                 <div class="editor-placeholder">Loading...</div>
             {/if}
@@ -226,8 +253,8 @@
 
 <style>
     .daily-note {
-        margin-bottom: var(--size-4-2);
-        padding-bottom: var(--size-4-4);
+        margin-bottom: 0;
+        padding-bottom: 8px;
     }
 
     .daily-note:has(.daily-note-editor[data-collapsed="true"]) {
@@ -236,29 +263,24 @@
     }
 
     .daily-note-header {
+        margin-bottom: 8px;
+        /* marginLeft set dynamically to match editor content position */
+    }
+
+    .daily-note-header.is-today {
         border-left: 3px solid var(--color-accent);
         padding-left: 12px;
-        margin-bottom: var(--size-4-4);
-    }
-
-    .daily-note:has(.is-readable-line-width) .daily-note-header {
-        max-width: var(--file-line-width);
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    .daily-note:not(:has(.is-readable-line-width)) .daily-note-header {
-        margin-left: calc((100% - var(--file-line-width)) / 2);
-        margin-right: calc((100% - var(--file-line-width)) / 2);
     }
 
     .daily-note-title {
-        font-size: 1.25em;
-        font-weight: 600;
+        /* Inherit from Obsidian's inline-title / heading settings */
+        font-size: var(--inline-title-size, var(--h1-size, 1.5em));
+        font-weight: var(--inline-title-weight, var(--h1-weight, 700));
+        line-height: var(--inline-title-line-height, var(--h1-line-height, 1.3));
     }
 
     .daily-note-editor {
-        min-height: 100px;
+        min-height: 0;
     }
 
     .daily-note-editor[data-collapsed="true"] {
