@@ -64,8 +64,6 @@
         }
     });
 
-    console.log(shouldRender, rendered)
-
     $: if (editorEl && shouldRender && !rendered) {
         showEditor();
     } else if (editorEl && !shouldRender && rendered) {

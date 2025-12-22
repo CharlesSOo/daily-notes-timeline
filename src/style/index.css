@@ -42,24 +42,22 @@
     padding: 0 !important;
     overflow-y: clip;
 }
-.daily-note-view .daily-note-wrapper::before {
+
+/* Separator line at the bottom of each note */
+.daily-note-view .daily-note-container::after {
     content: "";
     display: block;
     height: 1px;
     width: var(--file-line-width);
-    margin-bottom: 16px;
-    margin-top: 8px;
+    margin-top: 16px;
     margin-left: auto;
     margin-right: auto;
     background-color: var(--background-modifier-border);
 }
 
-.daily-note-view .daily-note-wrapper:first-of-type::before {
-    height: 0px;
-}
-
-.daily-note-view .dn-range-indicator + .daily-note-container::before {
-    height: 0px;
+/* Hide separator on last note */
+.daily-note-view .daily-note-wrapper:last-of-type .daily-note-container::after {
+    display: none;
 }
 
 .is-popout-window .dn-editor .dn-content {
@@ -91,23 +89,82 @@
     height: auto;
 }
 
+/* Backlinks container - use flexbox in parent to push to bottom */
+.daily-note-view .daily-note-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.daily-note-view .daily-note-container .daily-note {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.daily-note-view .daily-note-container .daily-note-editor {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Position backlinks at bottom right */
 .daily-note-view .embedded-backlinks {
+    margin-top: auto;
+    margin-left: auto;
+    width: auto;
     min-height: unset !important;
+    padding: 0;
+    border: none !important;
 }
 
-/* Hide backlinks section when empty (no backlinks found) */
-.daily-note-view .embedded-backlinks:has(.search-empty-state) {
+/* Remove borders */
+.daily-note-view .embedded-backlinks,
+.daily-note-view .embedded-backlinks * {
+    border: none !important;
+}
+
+/* Hide the toolbar */
+.daily-note-view .embedded-backlinks .nav-header {
     display: none;
 }
 
-/* Hide backlinks when tree is empty */
-.daily-note-view .embedded-backlinks .backlink-pane:not(:has(.tree-item)) {
+/* Hide Unlinked mentions (collapsed section) */
+.daily-note-view .embedded-backlinks .tree-item-self.is-collapsed {
     display: none;
 }
 
-/* Collapse empty unlinked mentions */
+/* Hide search results (we just want count) */
+.daily-note-view .embedded-backlinks .search-result-container {
+    display: none;
+}
+
+/* Hide when zero backlinks */
 .daily-note-view .embedded-backlinks .backlink-pane:has(.search-empty-state) {
     display: none;
+}
+
+/* Minimal header styling like Reflect */
+.daily-note-view .embedded-backlinks .backlink-pane > .tree-item-self {
+    background: none !important;
+    padding: 0;
+    color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+}
+
+/* Hide the collapse icon */
+.daily-note-view .embedded-backlinks .backlink-pane > .tree-item-self .collapse-icon {
+    display: none;
+}
+
+/* Style the count badge inline */
+.daily-note-view .embedded-backlinks .tree-item-flair-outer {
+    display: inline;
+    margin-left: 4px;
+}
+
+.daily-note-view .embedded-backlinks .tree-item-flair {
+    background: none;
+    color: var(--text-muted);
 }
 
 .daily-note-view {

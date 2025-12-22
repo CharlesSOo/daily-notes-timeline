@@ -106,6 +106,45 @@ export default class DailyNoteViewPlugin extends Plugin {
             }
         });
 
+        // Strip leading dashes from backlink items (CSS already adds bullet points)
+        this.setupBacklinksCleaner();
+    }
+
+    private setupBacklinksCleaner() {
+        const stripDashes = (container: Element) => {
+            container.querySelectorAll(".search-result-file-match > span:not(.search-result-file-matched-text)").forEach((span: Element) => {
+                const el = span as HTMLElement;
+                if (/^[\s-]+$/.test(el.textContent || "")) {
+                    el.style.display = "none";
+                } else if (/^[\s-]/.test(el.textContent || "")) {
+                    el.textContent = (el.textContent || "").replace(/^[\s-]+/, "");
+                }
+            });
+        };
+
+        const observer = new MutationObserver((mutations) => {
+            for (const mutation of mutations) {
+                if (mutation.type === "childList") {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node instanceof Element) {
+                            if (node.matches(".embedded-backlinks, .search-result-file-matches")) {
+                                stripDashes(node);
+                            }
+                            const backlinks = node.querySelectorAll(".embedded-backlinks, .search-result-file-matches");
+                            backlinks.forEach((el) => stripDashes(el));
+                        }
+                    });
+                }
+            }
+        });
+
+        this.app.workspace.onLayoutReady(() => {
+            observer.observe(document.body, { childList: true, subtree: true });
+            // Initial cleanup
+            document.querySelectorAll(".daily-note-view .embedded-backlinks").forEach((el) => stripDashes(el));
+        });
+
+        this.register(() => observer.disconnect());
     }
 
     onunload() {
