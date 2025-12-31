@@ -11,7 +11,7 @@ import {
     TFolder,
 } from "obsidian";
 
-import { around } from "monkey-around";
+import { around } from "./utils/around";
 import { DailyNoteEditor, isDailyNoteLeaf } from "./leafView";
 import "./style/index.css";
 import { addIconList } from "./utils/icon";
@@ -444,7 +444,6 @@ export default class DailyNoteViewPlugin extends Plugin {
 
         if (currentDay !== this.lastCheckedDay) {
             this.lastCheckedDay = currentDay;
-            console.log("Day changed, updating daily notes view");
 
             await this.ensureTodaysDailyNoteExists();
 

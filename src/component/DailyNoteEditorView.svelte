@@ -5,7 +5,46 @@
     import { TFile, moment } from "obsidian";
     import { getDateFromFile } from "obsidian-daily-notes-interface";
     import DailyNote from "./DailyNote.svelte";
-    import { inview } from "svelte-inview";
+    // Native IntersectionObserver action for note visibility
+    function observeVisibility(node: HTMLElement, options: { file: TFile; root: Element; onChange: (file: TFile, isVisible: boolean) => void }) {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    options.onChange(options.file, entry.isIntersecting);
+                });
+            },
+            { root: options.root, rootMargin: "50%" }
+        );
+        observer.observe(node);
+        return {
+            destroy() {
+                observer.disconnect();
+            }
+        };
+    }
+
+    // Native IntersectionObserver action for loader element
+    function observeLoader(node: HTMLElement, options: { root: Element; onInit: () => void; onChange: () => void; onLeave: () => void }) {
+        options.onInit();
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        options.onChange();
+                    } else {
+                        options.onLeave();
+                    }
+                });
+            },
+            { root: options.root }
+        );
+        observer.observe(node);
+        return {
+            destroy() {
+                observer.disconnect();
+            }
+        };
+    }
     import { TimeRange, SelectionMode, TimeField } from "../types/time";
     import { onMount } from "svelte";
     import { FileManager, FileManagerOptions } from "../utils/fileManager";
@@ -19,7 +58,8 @@
     export let target: string = "";
     export let timeField: TimeField = "mtime"; // 默认使用修改时间
     
-    const size = 1;
+    // Batch load 5 items at a time for better performance
+    const BATCH_SIZE = 5;
     let intervalId;
 
     let renderedFiles: TFile[] = [];
@@ -119,13 +159,24 @@
 
     function startFillViewport() {
         if (!intervalId) {
-            intervalId = setInterval(infiniteHandler, 1);
+            // Use requestAnimationFrame for efficient rendering instead of 1ms interval
+            function fillLoop() {
+                if (!hasMore || !fileManager) {
+                    intervalId = null;
+                    return;
+                }
+                infiniteHandler();
+                intervalId = requestAnimationFrame(fillLoop);
+            }
+            intervalId = requestAnimationFrame(fillLoop);
         }
     }
 
     function stopFillViewport() {
-        clearInterval(intervalId);
-        intervalId = null;
+        if (intervalId) {
+            cancelAnimationFrame(intervalId);
+            intervalId = null;
+        }
     }
 
     function infiniteHandler() {
@@ -136,7 +187,7 @@
         } else {
             renderedFiles = [
                 ...renderedFiles,
-                ...filteredFiles.splice(0, size)
+                ...filteredFiles.splice(0, BATCH_SIZE)
             ];
             if (firstLoaded) {
                 window.setTimeout(() => {
@@ -254,7 +305,6 @@
     
     // Handle note visibility change
     function handleNoteVisibilityChange(file: TFile, isVisible: boolean) {
-        console.log("inview", isVisible)
         if (isVisible) {
             visibleNotes.add(file.path);
         } else {
@@ -334,11 +384,11 @@
         </div>
     {/if}
     {#each renderedFiles as file (file.path)}
-        <div class="daily-note-wrapper" use:inview={{
-            rootMargin: "80%",
-            unobserveOnEnter: false,
-            root: leaf.view.contentEl
-        }} on:inview_change={({ detail }) => handleNoteVisibilityChange(file, detail.inView)}>
+        <div class="daily-note-wrapper" use:observeVisibility={{
+            file: file,
+            root: leaf.view.contentEl,
+            onChange: handleNoteVisibilityChange
+        }}>
             <DailyNote 
                 file={file} 
                 plugin={plugin} 
@@ -348,10 +398,12 @@
             />
         </div>
     {/each}
-    <div bind:this={loaderRef} class="dn-view-loader" use:inview={{
-        root: leaf.view.containerEl
-    }} on:inview_init={startFillViewport} on:inview_change={infiniteHandler}
-         on:inview_leave={stopFillViewport}/>
+    <div bind:this={loaderRef} class="dn-view-loader" use:observeLoader={{
+        root: leaf.view.containerEl,
+        onInit: startFillViewport,
+        onChange: infiniteHandler,
+        onLeave: stopFillViewport
+    }}/>
     {#if !hasMore}
         <div class="no-more-text">—— No more of results ——</div>
     {/if}

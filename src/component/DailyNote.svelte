@@ -92,10 +92,6 @@
         }
 
         try {
-            // Use safe type checking before accessing basename
-            const fileName = file instanceof TFile ? file.basename : "unknown";
-            console.log(`Loading editor for ${fileName}`);
-            
             [createdLeaf] = spawnLeafView(plugin, editorEl, leaf);
             createdLeaf.setPinned(true);
 
@@ -183,10 +179,6 @@
         if (!rendered || !createdLeaf) return;
         
         try {
-            // Use safe type checking before accessing basename
-            const fileName = file instanceof TFile ? file.basename : "unknown";
-            console.log(`Unloading editor for ${fileName}`);
-            
             // Detach the leaf
             if (createdLeaf.detach) {
                 createdLeaf.detach();
