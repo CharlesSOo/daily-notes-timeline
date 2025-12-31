@@ -452,7 +452,7 @@ export default class DailyNoteViewPlugin extends Plugin {
             if (dailyNoteLeaves.length > 0) {
                 for (const leaf of dailyNoteLeaves) {
                     const view = leaf.view as DailyNoteView;
-                    if (view) {
+                    if (view && typeof view.refreshForNewDay === 'function') {
                         view.refreshForNewDay();
                     }
                 }

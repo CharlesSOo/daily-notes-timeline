@@ -179,6 +179,12 @@
         if (!rendered || !createdLeaf) return;
         
         try {
+            // Blur any focused elements before detaching to prevent aria-hidden warnings
+            const focusedEl = editorEl?.querySelector(':focus');
+            if (focusedEl instanceof HTMLElement) {
+                focusedEl.blur();
+            }
+
             // Detach the leaf
             if (createdLeaf.detach) {
                 createdLeaf.detach();
